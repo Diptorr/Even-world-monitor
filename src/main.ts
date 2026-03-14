@@ -35,7 +35,9 @@ function updateDeviceStatus() {
   const g2Dot = document.getElementById('g2-dot');
   const r1Dot = document.getElementById('r1-dot');
   if (g2Dot) {
-    g2Dot.className = `status-dot ${getStatus()}`;
+    const g2s = getStatus();
+    // Map 'authenticated' to 'connected' for CSS class
+    g2Dot.className = `status-dot ${g2s === 'authenticated' ? 'connected' : g2s}`;
   }
   if (r1Dot) {
     r1Dot.className = `status-dot ${getR1Status()}`;
@@ -135,7 +137,8 @@ function navigateEvent(delta: number) {
 }
 
 async function sendCurrentToG2() {
-  if (getStatus() !== 'connected') return;
+  const s = getStatus();
+  if (s !== 'connected' && s !== 'authenticated') return;
   const event = state.filteredEvents[state.currentIndex];
   if (event) {
     await sendEventToG2(event, state.currentIndex, state.filteredEvents.length);
@@ -145,11 +148,13 @@ async function sendCurrentToG2() {
 // ── Device Management ────────────────────────────────────────────────
 
 async function toggleG2() {
-  if (getStatus() === 'connected') {
+  const s = getStatus();
+  if (s === 'connected' || s === 'authenticated') {
     disconnectG2();
   } else {
     await connectG2();
-    if (getStatus() === 'connected') {
+    const after = getStatus();
+    if (after === 'connected' || after === 'authenticated') {
       sendCurrentToG2();
     }
   }
