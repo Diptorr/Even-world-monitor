@@ -108,9 +108,14 @@ export function renderDashboard(state: DashboardState): string {
       </div>
       <div class="header-right">
         <div class="device-status" id="device-status">
-          <button class="btn-device" id="btn-connect-g2" title="Connect G2 Glasses">
+          <button class="btn-device" id="btn-enable-notif" title="Enable notifications (sends events to G2 via Even app)">
+            <span class="device-icon">\ud83d\udd14</span>
+            <span class="device-label">G2 Notify</span>
+            <span class="status-dot disconnected" id="notif-dot"></span>
+          </button>
+          <button class="btn-device" id="btn-connect-g2" title="Connect G2 Glasses (BLE direct)">
             <span class="device-icon">\ud83d\udc53</span>
-            <span class="device-label">G2</span>
+            <span class="device-label">G2 BLE</span>
             <span class="status-dot disconnected" id="g2-dot"></span>
           </button>
           <button class="btn-device" id="btn-connect-r1" title="Connect R1 Ring">
@@ -177,9 +182,10 @@ export function renderDashboard(state: DashboardState): string {
       </div>
       <div class="g2-controls">
         <button class="g2-btn" id="btn-g2-prev" title="Previous (\u2190)">\u25c0</button>
-        <button class="g2-btn" id="btn-g2-send" title="Send to G2">Send to G2</button>
+        <button class="g2-btn" id="btn-g2-send" title="Send to G2 (notification + BLE)">Send to G2</button>
         <button class="g2-btn" id="btn-g2-next" title="Next (\u2192)">\u25b6</button>
       </div>
+      <p class="g2-hint">Enable "G2 Notify" above \u2014 events appear on your glasses via phone notifications (Even app forwards them automatically)</p>
     </div>
 
     <footer class="dash-footer">

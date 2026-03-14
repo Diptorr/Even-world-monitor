@@ -1,10 +1,15 @@
 /**
  * Even World Monitor — Main Application
  *
- * Connects World Monitor signals API with:
- * - Web dashboard (filterable event feed)
- * - Even Realities G2 glasses (BLE text display)
- * - Even Realities R1 ring (BLE gesture navigation)
+ * On launch:
+ * 1. Loads latest signals from World Monitor
+ * 2. Requests notification permission
+ * 3. Fires phone notifications for top critical events
+ *    → Even app forwards these to G2 glasses automatically
+ * 4. Auto-refreshes every 60s and notifies on new urgent events
+ *
+ * The G2 glasses display phone notifications natively through the
+ * Even Realities app — no BLE pairing from the browser needed.
  */
 
 import { fetchAllSignals, generateDemoSignals } from './api.js';
@@ -13,10 +18,15 @@ import { connectR1, disconnectR1, onR1Gesture, onR1StatusChange, getR1Status, en
 import { DashboardState, createInitialState, filterEvents, renderDashboard } from './dashboard.js';
 import { SignalCategory, SIGNAL_CATEGORIES, REGIONS } from './types.js';
 import { showQROverlay } from './qr-overlay.js';
+import {
+  requestNotificationPermission, isNotificationEnabled,
+  notifyTopEvents, notifyNewEvents, notifyEvent,
+} from './notifications.js';
 
 // ── State ────────────────────────────────────────────────────────────
 
 let state: DashboardState = createInitialState();
+let previousEvents = state.events;
 const app = document.getElementById('app')!;
 
 // ── Render ───────────────────────────────────────────────────────────
@@ -29,6 +39,7 @@ function render() {
   app.innerHTML = renderDashboard(state);
   bindEvents();
   updateDeviceStatus();
+  updateNotificationStatus();
 }
 
 function updateDeviceStatus() {
@@ -36,11 +47,17 @@ function updateDeviceStatus() {
   const r1Dot = document.getElementById('r1-dot');
   if (g2Dot) {
     const g2s = getStatus();
-    // Map 'authenticated' to 'connected' for CSS class
     g2Dot.className = `status-dot ${g2s === 'authenticated' ? 'connected' : g2s}`;
   }
   if (r1Dot) {
     r1Dot.className = `status-dot ${getR1Status()}`;
+  }
+}
+
+function updateNotificationStatus() {
+  const dot = document.getElementById('notif-dot');
+  if (dot) {
+    dot.className = `status-dot ${isNotificationEnabled() ? 'connected' : 'disconnected'}`;
   }
 }
 
@@ -70,7 +87,6 @@ function bindEvents() {
     state.searchQuery = searchInput.value;
     state.currentIndex = 0;
     render();
-    // Refocus the input after re-render
     const newInput = document.getElementById('search-input') as HTMLInputElement | null;
     newInput?.focus();
     if (newInput) newInput.selectionStart = newInput.selectionEnd = newInput.value.length;
@@ -100,23 +116,45 @@ function bindEvents() {
     });
   });
 
-  // Event cards - click to select
+  // Event cards - click to select AND send notification to G2
   document.querySelectorAll('.event-card[data-index]').forEach((card) => {
     card.addEventListener('click', () => {
-      state.currentIndex = parseInt((card as HTMLElement).dataset.index ?? '0');
+      const idx = parseInt((card as HTMLElement).dataset.index ?? '0');
+      state.currentIndex = idx;
       render();
-      sendCurrentToG2();
+
+      // Send to G2 via notification
+      const event = state.filteredEvents[idx];
+      if (event) {
+        notifyEvent(event);
+        sendCurrentToG2();
+      }
     });
   });
 
   // G2 controls
   document.getElementById('btn-g2-prev')?.addEventListener('click', () => navigateEvent(-1));
   document.getElementById('btn-g2-next')?.addEventListener('click', () => navigateEvent(1));
-  document.getElementById('btn-g2-send')?.addEventListener('click', sendCurrentToG2);
+  document.getElementById('btn-g2-send')?.addEventListener('click', () => {
+    sendCurrentToG2();
+    // Also send as notification
+    const event = state.filteredEvents[state.currentIndex];
+    if (event) notifyEvent(event);
+  });
 
   // Device connect buttons
   document.getElementById('btn-connect-g2')?.addEventListener('click', toggleG2);
   document.getElementById('btn-connect-r1')?.addEventListener('click', toggleR1);
+
+  // Notification enable button
+  document.getElementById('btn-enable-notif')?.addEventListener('click', async () => {
+    await requestNotificationPermission();
+    updateNotificationStatus();
+    // If just enabled, send top events right away
+    if (isNotificationEnabled() && state.filteredEvents.length > 0) {
+      notifyTopEvents(state.filteredEvents, 3);
+    }
+  });
 
   // QR code overlay button
   document.getElementById('btn-show-qr')?.addEventListener('click', () => showQROverlay());
@@ -131,7 +169,10 @@ function navigateEvent(delta: number) {
   render();
   sendCurrentToG2();
 
-  // Scroll selected card into view
+  // Also push notification for the new current event
+  const event = state.filteredEvents[state.currentIndex];
+  if (event) notifyEvent(event);
+
   const selected = document.querySelector('.event-card.selected');
   selected?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
@@ -181,7 +222,6 @@ async function loadSignals() {
     if (events.length > 0) {
       state.events = events;
     } else {
-      // Fall back to demo data if API is not reachable
       console.info('API returned no events, using demo signals');
       state.events = generateDemoSignals();
     }
@@ -193,17 +233,28 @@ async function loadSignals() {
   state.isLoading = false;
   state.currentIndex = 0;
   render();
+
+  // ─── AUTO-NOTIFY: On first load, push top events to G2 via notifications ───
+  if (isNotificationEnabled()) {
+    notifyTopEvents(state.events, 3);
+  }
 }
 
-/** Auto-refresh signals on interval */
+/** Auto-refresh signals and notify about new urgent events */
 function startAutoRefresh(intervalMs: number = 60000) {
   setInterval(async () => {
     if (!state.isLiveMode) return;
     try {
       const events = await fetchAllSignals();
       if (events.length > 0) {
+        previousEvents = state.events;
         state.events = events;
         render();
+
+        // Notify about new critical/high events → appears on G2 glasses
+        if (isNotificationEnabled()) {
+          notifyNewEvents(previousEvents, state.events);
+        }
       }
     } catch { /* ignore refresh errors */ }
   }, intervalMs);
@@ -211,11 +262,15 @@ function startAutoRefresh(intervalMs: number = 60000) {
 
 // ── Initialization ───────────────────────────────────────────────────
 
-function init() {
+async function init() {
+  // Request notification permission immediately (needed for G2 glasses)
+  // On mobile this may need a user gesture, so we also have the enable button
+  await requestNotificationPermission();
+
   // Register BLE status listeners
   onStatusChange((status) => {
     updateDeviceStatus();
-    if (status === 'connected') {
+    if (status === 'connected' || status === 'authenticated') {
       sendCurrentToG2();
     }
   });
@@ -229,7 +284,6 @@ function init() {
       case 'swipe_left': navigateEvent(-1); break;
       case 'tap': sendCurrentToG2(); break;
       case 'double_tap':
-        // Cycle region filter
         const regions = Object.keys(REGIONS ?? {});
         const idx = regions.indexOf(state.selectedRegion);
         state.selectedRegion = regions[(idx + 1) % regions.length];
@@ -237,13 +291,8 @@ function init() {
         state.currentIndex = 0;
         render();
         break;
-      case 'swipe_up':
-        // Cycle severity filter (not implemented as separate filter, navigate up)
-        navigateEvent(-5);
-        break;
-      case 'swipe_down':
-        navigateEvent(5);
-        break;
+      case 'swipe_up': navigateEvent(-5); break;
+      case 'swipe_down': navigateEvent(5); break;
     }
   });
 
@@ -260,16 +309,15 @@ function init() {
   // Keyboard navigation (also serves as R1 fallback)
   enableKeyboardFallback();
 
-  // Load data
+  // Load data — this triggers auto-notify on completion
   loadSignals();
   startAutoRefresh(60000);
 
-  // Show QR codes on launch so other devices can connect
+  // Show QR codes on launch
   showQROverlay();
 
-  // Show BLE support warning
   if (!isBLESupported()) {
-    console.info('Web Bluetooth not supported. G2/R1 connection requires Chrome/Edge with BLE.');
+    console.info('Web Bluetooth not supported. BLE direct connection unavailable.');
   }
 }
 

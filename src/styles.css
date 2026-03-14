@@ -522,6 +522,14 @@ a:hover {
   border-color: var(--accent);
 }
 
+.g2-hint {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
 /* ── Loading & Empty States ──────────────────────────────────────── */
 
 .loading-state,
