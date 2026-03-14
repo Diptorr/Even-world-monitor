@@ -1,0 +1,29 @@
+{
+  "name": "even-world-monitor",
+  "version": "1.0.0",
+  "description": "World Monitor signals dashboard for Even Realities G2 glasses & R1 ring",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:34027/git/Diptorr/Even-world-monitor"
+  },
+  "keywords": [
+    "even-realities",
+    "g2",
+    "r1",
+    "worldmonitor",
+    "ble"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/web-bluetooth": "^0.0.21",
+    "typescript": "^5.4.0",
+    "vite": "^5.4.0"
+  }
+}
