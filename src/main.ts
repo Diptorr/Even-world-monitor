@@ -12,6 +12,7 @@ import { connectG2, disconnectG2, onStatusChange, getStatus, sendEventToG2, onTo
 import { connectR1, disconnectR1, onR1Gesture, onR1StatusChange, getR1Status, enableKeyboardFallback } from './ble-r1.js';
 import { DashboardState, createInitialState, filterEvents, renderDashboard } from './dashboard.js';
 import { SignalCategory, SIGNAL_CATEGORIES, REGIONS } from './types.js';
+import { showQROverlay } from './qr-overlay.js';
 
 // ── State ────────────────────────────────────────────────────────────
 
@@ -114,6 +115,9 @@ function bindEvents() {
   // Device connect buttons
   document.getElementById('btn-connect-g2')?.addEventListener('click', toggleG2);
   document.getElementById('btn-connect-r1')?.addEventListener('click', toggleR1);
+
+  // QR code overlay button
+  document.getElementById('btn-show-qr')?.addEventListener('click', () => showQROverlay());
 }
 
 // ── Navigation ───────────────────────────────────────────────────────
@@ -254,6 +258,9 @@ function init() {
   // Load data
   loadSignals();
   startAutoRefresh(60000);
+
+  // Show QR codes on launch so other devices can connect
+  showQROverlay();
 
   // Show BLE support warning
   if (!isBLESupported()) {

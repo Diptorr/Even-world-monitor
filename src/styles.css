@@ -613,3 +613,179 @@ a:hover {
     display: none;
   }
 }
+
+/* ── QR Code Overlay ─────────────────────────────────────────────── */
+
+.qr-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: qr-fade-in 0.3s ease-out;
+}
+
+.qr-overlay.qr-hiding {
+  animation: qr-fade-out 0.3s ease-in forwards;
+}
+
+@keyframes qr-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes qr-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.qr-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 90%;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+  animation: qr-slide-up 0.3s ease-out;
+}
+
+@keyframes qr-slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.qr-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.qr-header h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.35rem;
+}
+
+.qr-header p {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.qr-close {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  line-height: 1;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s;
+}
+
+.qr-close:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+.qr-cards {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.qr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  min-width: 220px;
+  transition: border-color 0.15s;
+}
+
+.qr-card:hover {
+  border-color: var(--accent);
+}
+
+.qr-img {
+  width: 200px;
+  height: 200px;
+  border-radius: var(--radius-sm);
+  image-rendering: pixelated;
+}
+
+.qr-placeholder {
+  width: 200px;
+  height: 200px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 2rem;
+}
+
+.qr-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.qr-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.qr-url {
+  font-size: 0.8rem;
+  color: var(--accent);
+  word-break: break-all;
+  text-align: center;
+}
+
+.qr-footer {
+  text-align: center;
+  margin-top: 1.25rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* QR toggle button in header */
+.btn-qr {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 0.8rem;
+  transition: all 0.15s;
+}
+
+.btn-qr:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+}

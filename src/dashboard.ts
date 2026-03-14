@@ -119,6 +119,9 @@ export function renderDashboard(state: DashboardState): string {
             <span class="status-dot disconnected" id="r1-dot"></span>
           </button>
         </div>
+        <button class="btn-qr" id="btn-show-qr" title="Show QR codes for network access">
+          <span>QR</span>
+        </button>
         <div class="live-indicator ${state.isLiveMode ? 'active' : ''}">
           <span class="live-dot"></span>
           <span>LIVE</span>
