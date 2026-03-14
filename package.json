@@ -4,9 +4,9 @@
   "description": "World Monitor signals dashboard for Even Realities G2 glasses & R1 ring",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+    "dev": "npx vite",
+    "build": "npx tsc && npx vite build",
+    "preview": "npx vite preview"
   },
   "repository": {
     "type": "git",
